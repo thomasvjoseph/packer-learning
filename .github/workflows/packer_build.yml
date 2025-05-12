@@ -1,6 +1,8 @@
 name: packer build
 on:
   push:
+    branches:
+      - main
 
 jobs:
   packer:
