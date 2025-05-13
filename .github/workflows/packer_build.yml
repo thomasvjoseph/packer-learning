@@ -10,7 +10,7 @@ jobs:
     name: Run Packer
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 
 
       - name: Setup `packer`
         uses: hashicorp/setup-packer@main
@@ -40,9 +40,19 @@ jobs:
             -var "aws_secret_key=${{ secrets.AWS_SECRET_KEY }}" \
             ./packer/aws-docker-ubuntu.pkr.hcl
 
-          AMI_ID=$(echo "$AMI_OUTPUT" | grep 'artifact,0,id' | cut -d, -f6 | cut -d: -f2)
+          # Extract AMI ID from output
+          AMI_ID=$(jq -r '.builds[0].artifact_id' ./packer/manifest.json | cut -d':' -f2)
+          echo "Extracted AMI ID: $AMI_ID"
 
-          echo "AMI ID: $AMI_ID"
+          echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
+          echo "ami_id=$AMI_ID" >> $GITHUB_OUTPUT
+    
+      - name: Use AMI ID
+        run: echo "Built AMI ID is ${{ steps.build.outputs.ami_id }}"
 
-          # Export to GitHub Actions output
-          echo "ami_id=$AMI_ID" >> "$GITHUB_OUTPUT"
+      - name: Trigger Terraform workflow
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: terraform_build.yml
+          inputs: '{ "ami_id": "${{ steps.build.outputs.ami_id }}" }'
+          token: ${{ secrets.PAT_TOKEN }}

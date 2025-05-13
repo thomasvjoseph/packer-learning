@@ -28,8 +28,8 @@ source "amazon-ebs" "ubuntu" {
   ami_description = "CIS Hardened Ubuntu 22.04"
   instance_type   = "t2.micro"
   region          = var.region
-  access_key  = var.aws_access_key
-  secret_key  = var.aws_secret_key
+  access_key      = var.aws_access_key
+  secret_key      = var.aws_secret_key
 
   source_ami_filter {
     filters = {
@@ -51,5 +51,9 @@ build {
   provisioner "ansible" {
     playbook_file = "./ansible/cis_harden_ubuntu.yml"
     #galaxy_file = "requirements.yml"
+  }
+  post-processor "manifest" {
+    output     = "${path.root}/manifest.json"
+    strip_path = true
   }
 }
